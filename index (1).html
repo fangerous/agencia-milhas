@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Agencia de Milhas</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:Arial,sans-serif;background:#0a0a1a;color:white;padding:8px}
+        h1{color:#00b4d8;text-align:center;font-size:18px;margin:10px 0}
+        .card{background:#0f3460;padding:12px;border-radius:12px;margin:6px 0}
+        h2{color:#00b4d8;font-size:14px;margin-bottom:8px}
+        .tabs{display:flex;gap:4px;margin:8px 0}
+        .tab{flex:1;padding:10px;background:#16213e;border-radius:10px;text-align:center;font-size:12px;font-weight:bold;cursor:pointer;border:none;color:white}
+        .tab.active{background:#00b4d8;color:#0a0a1a}
+        .rota{background:#16213e;padding:10px;border-radius:10px;margin:5px 0;border-left:4px solid #00b4d8}
+        .r-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}
+        .r-nome{color:#00b4d8;font-weight:bold;font-size:13px}
+        .r-preco{color:#00ff88;font-weight:bold;font-size:15px}
+        .r-info{color:#aaa;font-size:10px;margin:3px 0}
+        .r-progs{display:flex;flex-wrap:wrap;gap:2px;margin:3px 0}
+        .r-prog{background:#0f3460;color:#ffaa00;padding:2px 6px;border-radius:6px;font-size:8px}
+        button{background:#00b4d8;color:white;padding:8px 14px;border:none;border-radius:6px;font-size:12px;font-weight:bold;cursor:pointer;margin:3px 2px}
+        .btn-whats{background:#25D366;display:block;width:100%;padding:14px;border-radius:25px;font-size:16px;margin:8px 0}
+        .btn-rem{background:#ff6b35;padding:4px 8px;font-size:10px}
+        input[type=text]{width:100%;padding:10px;margin:4px 0;background:#1a1a2e;color:white;border:2px solid #333;border-radius:8px;font-size:14px}
+        input[type=range]{width:100%;margin:8px 0}
+        .lucro{color:#00ff88;font-size:22px;font-weight:bold;text-align:center;margin:5px 0}
+        .progs{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+        .prog-item{display:inline-block}
+        .prog-item input{display:none}
+        .prog-item label{display:inline-block;background:#16213e;padding:5px 8px;border-radius:10px;font-size:9px;cursor:pointer;border:2px solid transparent}
+        .prog-item input:checked+label{border-color:#00ff88;background:#1a2744;color:#00ff88}
+        .prop-item{background:#16213e;padding:8px;border-radius:8px;margin:3px 0;display:flex;justify-content:space-between;align-items:center;font-size:11px}
+        .total{color:#00ff88;font-size:18px;font-weight:bold;text-align:right;margin:8px 0}
+        .hidden{display:none}
+    </style>
+</head>
+<body>
+
+<h1>✈️ Agencia de Milhas</h1>
+
+<div class="tabs">
+    <button class="tab active" onclick="mostrarAba('rotas')">🌍 Rotas</button>
+    <button class="tab" onclick="mostrarAba('busca')">🔍 Buscar</button>
+    <button class="tab" onclick="mostrarAba('proposta')">📄 Proposta</button>
+</div>
+
+<div id="aba-rotas">
+    <div class="card">
+        <h2>💰 Margem de Lucro</h2>
+        <input type="range" id="margem" min="10" max="50" value="30" oninput="atualizarMargem()">
+        <div class="lucro" id="margem-valor">30%</div>
+        <h2>🎯 Programas</h2>
+        <div class="progs" id="progs-checkboxes"></div>
+        <button style="width:100%" onclick="renderRotas()">✅ Aplicar</button>
+    </div>
+    <div id="rotas-container"></div>
+</div>
+
+<div id="aba-busca" class="hidden">
+    <div class="card">
+        <h2>🔍 Buscar Rota</h2>
+        <input type="text" id="busca-origem" placeholder="Origem (ex: GRU)">
+        <input type="text" id="busca-destino" placeholder="Destino (ex: MIA)">
+        <button style="width:100%" onclick="buscar()">🔍 Buscar</button>
+        <div id="busca-resultado" style="margin-top:10px"></div>
+    </div>
+</div>
+
+<div id="aba-proposta" class="hidden">
+    <div class="card">
+        <h2>📄 Proposta</h2>
+        <input type="text" id="cliente-nome" placeholder="Nome do cliente">
+    </div>
+    <div id="proposta-container"></div>
+    <button class="btn-whats" onclick="enviarWhatsApp()">💬 Enviar via WhatsApp</button>
+</div>
+
+<script>
+var VALORES = {"Amex MR":0.018,"Chase UR":0.02,"Capital One":0.017,"Citi TYP":0.016,"Bilt":0.018,"Marriott":0.008,"United":0.013,"Delta":0.012,"American":0.014,"TAP":0.015,"LATAM":0.011,"Azul":0.01};
+var COMPANHIAS = ["United","Delta","American","TAP","LATAM","Azul"];
+var rotas=[],proposta=[],programasSelecionados=["United","Delta","American"];
+
+function gerarRotas(){
+    rotas=[];
+    var o=["GRU","GIG","BSB","CNF","SSA","REC"];
+    var d=["MIA","MCO","JFK","LHR","CDG","MAD","LIS","FCO","DXB","HND","EZE","SCL"];
+    for(var i=0;i<o.length;i++)for(var j=0;j<d.length;j++)rotas.push({origem:o[i],destino:d[j],milhas:Math.floor(Math.random()*50000)+15000,taxas:Math.floor(Math.random()*550)+150,companhia:COMPANHIAS[Math.floor(Math.random()*COMPANHIAS.length)]});
+}
+
+function renderProgramas(){
+    var h='';
+    for(var p in VALORES){
+        var c=programasSelecionados.indexOf(p)>=0?'checked':'';
+        h+='<span class="prog-item"><input type="checkbox" id="p_'+p+'" '+c+' onchange="togglePrograma(''+p+'')"><label for="p_'+p+'">'+p+'</label></span>';
+    }
+    document.getElementById('progs-checkboxes').innerHTML=h;
+}
+
+function togglePrograma(p){var i=programasSelecionados.indexOf(p);if(i>=0)programasSelecionados.splice(i,1);else programasSelecionados.push(p);}
+
+function melhorValor(){var mv=0;for(var i=0;i<programasSelecionados.length;i++){var v=VALORES[programasSelecionados[i]]||0;if(v>mv)mv=v;}return mv||0.014;}
+
+function atualizarMargem(){document.getElementById('margem-valor').textContent=document.getElementById('margem').value+'%';renderRotas();}
+
+function renderRotas(){
+    var m=parseInt(document.getElementById('margem').value),mv=melhorValor(),h='<p style="color:#aaa;font-size:11px;margin:8px 0">'+rotas.length+' rotas | Melhor: R$ '+mv.toFixed(3)+'/ponto | Margem: '+m+'%</p>';
+    for(var i=0;i<rotas.length;i++){
+        var r=rotas[i],vd=Math.floor(r.milhas*mv*(1+m/100)),ct=Math.floor(r.milhas*mv),ph='';
+        for(var j=0;j<programasSelecionados.length;j++){var p=programasSelecionados[j];if(VALORES[p]){var pv=Math.floor(r.milhas*VALORES[p]*(1+m/100));ph+='<span class="r-prog">'+p+': R$'+pv.toLocaleString('pt-BR')+'</span>';}}
+        h+='<div class="rota"><div class="r-top"><span class="r-nome">'+r.origem+' → '+r.destino+'</span><span class="r-preco">R$ '+vd.toLocaleString('pt-BR')+'</span></div><div class="r-info">'+r.milhas.toLocaleString('pt-BR')+' milhas + R$ '+r.taxas+' | ✈️ '+r.companhia+' | Custo: R$ '+ct.toLocaleString('pt-BR')+'</div><div class="r-progs">'+ph+'</div><button onclick="addProposta(''+r.origem+'',''+r.destino+'','+r.milhas+','+r.taxas+',''+r.companhia+'','+vd+')">➕ Adicionar</button></div>';
+    }
+    document.getElementById('rotas-container').innerHTML=h||'<p style="color:#aaa;text-align:center">Nenhuma rota</p>';
+}
+
+function buscar(){
+    var o=document.getElementById('busca-origem').value.toUpperCase().trim(),d=document.getElementById('busca-destino').value.toUpperCase().trim(),res=document.getElementById('busca-resultado'),m=parseInt(document.getElementById('margem').value),mv=melhorValor();
+    if(!o){res.innerHTML='<p style="color:#ff6b35;text-align:center">Digite a origem</p>';return;}
+    var enc=rotas.filter(function(r){return r.origem===o&&(!d||r.destino===d);});
+    if(enc.length===0){res.innerHTML='<p style="color:#ff6b35;text-align:center">Nao encontrada</p>';return;}
+    var h='<p style="color:#aaa;font-size:11px">'+enc.length+' rota(s)</p>';
+    for(var i=0;i<enc.length;i++){var r=enc[i],vd=Math.floor(r.milhas*mv*(1+m/100));h+='<div class="rota"><div class="r-top"><span class="r-nome">✅ '+r.origem+' → '+r.destino+'</span><span class="r-preco">R$ '+vd.toLocaleString('pt-BR')+'</span></div><div class="r-info">'+r.milhas.toLocaleString('pt-BR')+' milhas + R$ '+r.taxas+' | ✈️ '+r.companhia+'</div><button onclick="addProposta(''+r.origem+'',''+r.destino+'','+r.milhas+','+r.taxas+',''+r.companhia+'','+vd+')">➕ Proposta</button></div>';}
+    res.innerHTML=h;
+}
+
+function addProposta(o,d,m,t,c,v){if(proposta.length>=5){alert('Maximo 5 rotas!');return;}proposta.push({origem:o,destino:d,milhas:m,taxas:t,companhia:c,venda:v});renderProposta();mostrarAba('proposta');}
+
+function renderProposta(){var h='',t=0;for(var i=0;i<proposta.length;i++){var r=proposta[i];t+=r.venda;h+='<div class="prop-item"><div><b style="color:#00b4d8">'+r.origem+' → '+r.destino+'</b><span style="color:#aaa;font-size:9px"> | '+r.companhia+' | '+r.milhas.toLocaleString('pt-BR')+' milhas</span></div><div style="display:flex;align-items:center;gap:6px"><span style="color:#00ff88;font-weight:bold">R$ '+r.venda.toLocaleString('pt-BR')+'</span><button class="btn-rem" onclick="removerProposta('+i+')">✕</button></div></div>';}h+='<div class="total">💎 Total: R$ '+t.toLocaleString('pt-BR')+'</div>';document.getElementById('proposta-container').innerHTML=h||'<p style="color:#aaa;text-align:center">Vazia</p>';}
+
+function removerProposta(i){proposta.splice(i,1);renderProposta();}
+
+function enviarWhatsApp(){
+    if(proposta.length===0){alert('Adicione rotas!');return;}
+    var n=document.getElementById('cliente-nome').value||'Cliente',msg='*PROPOSTA DE VIAGEM*%0A%0A👤 '+n+'%0A%0A✈️ *ROTAS:*%0A%0A',t=0;
+    for(var i=0;i<proposta.length;i++){var r=proposta[i];t+=r.venda;msg+=(i+1)+'. *'+r.origem+' → '+r.destino+'*%0A🛫 '+r.companhia+'%0A💰 '+r.milhas.toLocaleString('pt-BR')+' milhas + R$ '+r.taxas+'%0A💵 *R$ '+r.venda.toLocaleString('pt-BR')+'*%0A%0A';}
+    msg+='💎 *TOTAL: R$ '+t.toLocaleString('pt-BR')+'*%0A%0A📞 Entre em contato!';
+    window.open('https://wa.me/5511999999999?text='+msg,'_blank');
+}
+
+function mostrarAba(aba){
+    document.getElementById('aba-rotas').classList.add('hidden');
+    document.getElementById('aba-busca').classList.add('hidden');
+    document.getElementById('aba-proposta').classList.add('hidden');
+    document.getElementById('aba-'+aba).classList.remove('hidden');
+    document.querySelectorAll('.tab')[0].classList.remove('active');
+    document.querySelectorAll('.tab')[1].classList.remove('active');
+    document.querySelectorAll('.tab')[2].classList.remove('active');
+    if(aba==='rotas')document.querySelectorAll('.tab')[0].classList.add('active');
+    if(aba==='busca')document.querySelectorAll('.tab')[1].classList.add('active');
+    if(aba==='proposta')document.querySelectorAll('.tab')[2].classList.add('active');
+}
+
+gerarRotas();
+renderProgramas();
+renderRotas();
+</script>
+</body>
+</html>
